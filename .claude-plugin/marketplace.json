@@ -1,0 +1,14 @@
+{
+  "name": "reel-style",
+  "owner": {
+    "name": "Chia-Wei (Aaron) Liang"
+  },
+  "plugins": [
+    {
+      "name": "reel-style",
+      "source": "./",
+      "description": "參考影片風格轉移：兩支影片進，一支剪好的直式短影音出。"
+    }
+  ],
+  "description": "參考影片風格轉移工具：拆解一支影片的版面語彙，套用到你自己的素材上。"
+}

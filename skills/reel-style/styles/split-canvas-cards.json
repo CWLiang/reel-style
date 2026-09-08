@@ -1,0 +1,82 @@
+{
+  "name": "split-canvas-cards",
+  "note": "從一支參考影片的螢幕錄影實測量得。影片縮成下方圓角卡，上方留白畫布放字卡；底色隨段落切換。數值是量出來的，不是設計的。",
+  "frame": [
+    1080,
+    1920
+  ],
+  "video_card": {
+    "top_pct": 0.57,
+    "inset_pct": 0.022,
+    "radius": 34
+  },
+  "accent": "#D85830",
+  "palettes": {
+    "beige": {
+      "bg": "#E0D8C8",
+      "ink": "#2B2F35",
+      "muted": "#8A8378",
+      "card": "#FBFAF7",
+      "row": "#F0E8D8",
+      "shadow": true
+    },
+    "gray": {
+      "bg": "#EBE9E5",
+      "ink": "#2B2F35",
+      "muted": "#8A8378",
+      "card": "#FBFAF7",
+      "row": "#F0E8D8",
+      "shadow": true
+    },
+    "dark": {
+      "bg": "#0A0A12",
+      "ink": "#F4F3F0",
+      "muted": "#8C97A3",
+      "card": "#151E28",
+      "row": "#1E2A36",
+      "shadow": false
+    }
+  },
+  "fonts": [
+    "PingFang TC",
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    "Noto Sans CJK TC"
+  ],
+  "sizes": {
+    "credit": 34,
+    "kicker": 38,
+    "h1": 86,
+    "h2": 58,
+    "huge": 340,
+    "hero": 104,
+    "body": 44,
+    "row": 48,
+    "name": 40,
+    "sub": 27,
+    "badge": 36,
+    "pill": 40,
+    "note": 30,
+    "arrow": 52,
+    "subtitle": 60
+  },
+  "motion": {
+    "card_in": 220,
+    "row_in": 200,
+    "section_crossfade": 260,
+    "bg_hold_after": 320
+  },
+  "credit": true,
+  "components": [
+    "credit_line",
+    "kicker",
+    "title",
+    "list",
+    "flow",
+    "bars",
+    "scope",
+    "quote",
+    "hero",
+    "pill"
+  ]
+}

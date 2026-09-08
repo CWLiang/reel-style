@@ -1,0 +1,64 @@
+{
+  "name": "fullscreen-overlay",
+  "note": "影片滿版，字卡直接疊在畫面上，上方加一層 scrim 壓暗以確保可讀。適合主體在下半部、或背景乾淨的素材；主體在上三分之一的素材請改用 split。",
+  "layout_mode": "full",
+  "frame": [
+    1080,
+    1920
+  ],
+  "accent": "#FFC24D",
+  "subtitle_outline": 7,
+  "palettes": {
+    "on_video": {
+      "bg": "#000000",
+      "ink": "#FFFFFF",
+      "muted": "#C9C6C0",
+      "card": "#12161C",
+      "row": "#232A33",
+      "shadow": false
+    },
+    "light_card": {
+      "bg": "#000000",
+      "ink": "#22252A",
+      "muted": "#7C7871",
+      "card": "#FBFAF7",
+      "row": "#EFEBE3",
+      "shadow": true
+    }
+  },
+  "fonts": [
+    "PingFang TC",
+    "Noto Sans TC",
+    "Microsoft JhengHei"
+  ],
+  "sizes": {
+    "credit": 34,
+    "kicker": 38,
+    "h1": 86,
+    "h2": 58,
+    "huge": 300,
+    "hero": 104,
+    "body": 44,
+    "row": 48,
+    "name": 40,
+    "sub": 27,
+    "badge": 36,
+    "pill": 40,
+    "note": 30,
+    "arrow": 52,
+    "subtitle": 66
+  },
+  "motion": {
+    "card_in": 220,
+    "row_in": 200,
+    "section_crossfade": 200,
+    "bg_hold_after": 240
+  },
+  "credit": false,
+  "scrim": {
+    "color": "#05070A",
+    "alpha": "6E",
+    "height_pct": 0.62,
+    "bands": 14
+  }
+}

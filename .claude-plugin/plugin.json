@@ -1,0 +1,9 @@
+{
+  "name": "reel-style",
+  "description": "給一支你喜歡的參考影片和一支自己拍的原檔，Claude 拆解參考影片的版面語彙，套到你的素材上，輸出直式短影音。",
+  "version": "0.1.0",
+  "author": { "name": "Chia-Wei (Aaron) Liang" },
+  "homepage": "https://github.com/CWLiang/reel-style",
+  "repository": "https://github.com/CWLiang/reel-style",
+  "license": "MIT"
+}
