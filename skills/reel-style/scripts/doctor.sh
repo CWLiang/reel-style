@@ -10,6 +10,12 @@ say_fix() { printf "    → 修法：%s\n" "$1"; }
 
 echo "── reel-style 環境檢查 ──"
 
+PY_PROBE=""
+for cand in "$REEL_PYTHON" "$(command -v python3)" /usr/bin/python3; do
+  [ -x "$cand" ] && { PY_PROBE="$cand"; break; }
+done
+
+
 # 1. ffmpeg 本體
 if command -v ffmpeg >/dev/null 2>&1; then
   printf "$g ffmpeg  %s\n" "$(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f1-3)"
@@ -40,13 +46,48 @@ else
 fi
 
 # 4. 中文字型
+# 不能只靠 fc-list —— 那是 brew 裝的命令列工具，libass 用的是 fontconfig 函式庫，
+# 兩者是不同的東西。沒 brew 的機器上 fc-list 不存在，但中文照樣渲染得出來。
+# 所以改成「真的渲染一次中文，看有沒有畫出東西」。
 font=$(fc-list 2>/dev/null | grep -ioE "PingFang TC|Noto Sans TC|Noto Sans CJK TC|Microsoft JhengHei" | head -1)
-if [ -n "$font" ]; then
-  printf "$g 中文字型  %s\n" "$font"; ok=$((ok+1))
+if command -v ffmpeg >/dev/null 2>&1; then
+  tmp=$(mktemp -d)
+  cat > "$tmp/t.ass" <<'ASS'
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 400
+PlayResY: 120
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, Bold, Alignment, Encoding
+Style: D,PingFang TC,56,&H00000000&,1,5,1
+[Events]
+Format: Layer, Start, End, Style, Text
+Dialogue: 0,0:00:00.00,0:00:01.00,D,{\an5\pos(200,60)}中文字型測試
+ASS
+  ffmpeg -v error -y -f lavfi -i color=white:s=400x120:d=1 -vf "ass=$tmp/t.ass" \
+         -frames:v 1 -pix_fmt gray -f rawvideo "$tmp/t.raw" 2>/dev/null
+  ratio=$($PY_PROBE - "$tmp/t.raw" 2>/dev/null <<'PYEOF'
+import sys
+try:
+    d = open(sys.argv[1], "rb").read()
+    print(int(100 * sum(1 for v in d if v < 100) / len(d)) if d else 0)
+except Exception:
+    print(-1)
+PYEOF
+)
+  rm -rf "$tmp"
+  if [ "${ratio:-0}" -ge 2 ] 2>/dev/null; then
+    printf "$g 中文可渲染（實際畫過一次，深色像素 %s%%）%s\n" "$ratio" \
+           "${font:+　字型：$font}"
+    ok=$((ok+1))
+  else
+    printf "$r 中文渲染不出來 —— 字幕會是空白或豆腐方塊\n"
+    say_fix "macOS/Windows 通常內建中文字型；若真的缺，裝 brew install --cask font-noto-sans-cjk-tc"
+    fail=$((fail+1))
+  fi
 else
-  printf "$r 找不到中文字型 —— 字幕會變成豆腐方塊\n"
-  say_fix "brew install --cask font-noto-sans-cjk-tc"
-  fail=$((fail+1))
+  printf "$y 中文字型 —— 沒有 ffmpeg，無法實測（先裝 ffmpeg 再跑一次）\n"
+  warn=$((warn+1))
 fi
 
 # 5. Python（只需要直譯器本身 —— 這條管線刻意不依賴任何第三方套件）
