@@ -453,6 +453,30 @@ class Reel:
         return head + "\n".join(self.EV) + "\n"
 
 
+# 量出來的風格存在使用者自己的目錄，不要寫進 plugin 目錄 —— 那是 git clone，更新會被蓋掉。
+USER_STYLES = os.path.expanduser(os.environ.get("REEL_STYLES", "~/.reel-style/styles"))
+BUILTIN_STYLES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "styles")
+
+
+def resolve_style(ref, plan_dir):
+    """依序找：絕對路徑 → plan 旁邊 → 使用者自己的風格庫 → 內建風格。"""
+    if os.path.isabs(ref) and os.path.exists(ref):
+        return ref
+    name = os.path.basename(ref)
+    if not name.endswith(".json"):
+        name += ".json"
+    for cand in (os.path.join(plan_dir, ref),
+                 os.path.join(USER_STYLES, name),
+                 os.path.join(BUILTIN_STYLES, name)):
+        if os.path.exists(cand):
+            return cand
+    raise SystemExit(
+        f"找不到風格 '{ref}'。找過：\n"
+        f"  {os.path.join(plan_dir, ref)}\n"
+        f"  {os.path.join(USER_STYLES, name)}（你自己量的）\n"
+        f"  {os.path.join(BUILTIN_STYLES, name)}（內建）")
+
+
 def probe_src(path):
     """回傳 (解碼後的寬, 高, 是否 HDR)。
 
@@ -513,12 +537,7 @@ def main():
     plan_path = sys.argv[1]
     plan = json.load(open(plan_path, encoding="utf-8"))
     base = os.path.dirname(os.path.abspath(plan_path))
-    sp = plan["style"]
-    if not os.path.isabs(sp):
-        sp = os.path.join(base, sp)
-        if not os.path.exists(sp):
-            sp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", plan["style"])
-    style = json.load(open(sp, encoding="utf-8"))
+    style = json.load(open(resolve_style(plan["style"], base), encoding="utf-8"))
 
     out_dir = os.path.expanduser(plan.get("out_dir") or base)
     os.makedirs(out_dir, exist_ok=True)

@@ -84,6 +84,63 @@ def wat_frames(path, out_dir, reel_top, reel_h, scale, limit=12):
     return out
 
 
+USER_STYLES = os.path.expanduser(os.environ.get("REEL_STYLES", "~/.reel-style/styles"))
+BUILTIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "styles")
+
+
+def _lum(hexs):
+    h = hexs.lstrip("#")
+    return (int(h[0:2], 16) * 299 + int(h[2:4], 16) * 587 + int(h[4:6], 16) * 114) / 1000
+
+
+def _palette_from_bg(bg):
+    """由量到的畫布底色推出整組色。深底配淺字，淺底配深字。"""
+    if _lum(bg) < 110:
+        return {"bg": bg, "ink": "#F4F3F0", "muted": "#8C97A3",
+                "card": "#151E28", "row": "#1E2A36", "shadow": False}
+    return {"bg": bg, "ink": "#2B2F35", "muted": "#8A8378",
+            "card": "#FBFAF7", "row": "#F0E8D8", "shadow": True}
+
+
+def write_style_draft(res, name):
+    """把量到的數字寫成 style.json 草稿，存進使用者自己的風格庫。
+
+    量得到的（尺寸、影片卡比例、畫布色）直接填；量不到的（強調色、字級、
+    動態時長）沿用內建風格當預設，等 Claude 看完 contact sheet 再改。
+    """
+    seed = "fullscreen-overlay" if res.get("layout_mode") == "full" else "split-canvas-cards"
+    st = json.load(open(os.path.join(BUILTIN, seed + ".json"), encoding="utf-8"))
+    st["name"] = name
+    st["note"] = (f"從 {res['source']} 量出來的草稿。"
+                  "尺寸／影片卡比例／畫布色是量到的；強調色、字級、動態時長還是預設值，"
+                  "看過 contact sheet 之後要改。")
+    st["measured_from"] = res["source"]
+    st["layout_mode"] = res.get("layout_mode", "split")
+    if res.get("video_card"):
+        st["video_card"] = res["video_card"]
+    elif "video_card" in st:
+        del st["video_card"]
+
+    # 量到的畫布色去重後排序：淺的當主色、深的當對比段落
+    cands = sorted(set(res.get("palette_candidates") or []), key=_lum, reverse=True)
+    if cands:
+        pal, used = {}, []
+        for c in cands[:3]:
+            key = "dark" if _lum(c) < 110 else ("beige" if len(used) == 0 else f"light{len(used)+1}")
+            if key in pal:
+                continue
+            pal[key] = _palette_from_bg(c)
+            used.append(key)
+        st["palettes"] = pal
+    st["needs_review"] = ["accent", "sizes", "motion", "palettes 的 ink/card/row"]
+
+    os.makedirs(USER_STYLES, exist_ok=True)
+    out = os.path.join(USER_STYLES, name + ".json")
+    with open(out, "w", encoding="utf-8") as fh:
+        json.dump(st, fh, ensure_ascii=False, indent=2)
+    return out
+
+
 def measure(path, out_dir, reel_top=None, reel_h=None):
     ow, oh = probe_size(path)
     dur = probe_duration(path)
@@ -131,7 +188,11 @@ def measure(path, out_dir, reel_top=None, reel_h=None):
         return sorted(xs)[len(xs) // 2] if xs else None
 
     res["canvas_colors"] = samples
-    res["palette_candidates"] = sorted(set(samples))
+    # 只出現一次的顏色多半是滿版段落的影片內容滲進取樣邊條，不是真的畫布色
+    from collections import Counter as _C
+    freq = _C(samples)
+    res["palette_candidates"] = [c for c, n in freq.most_common() if n >= 2] or sorted(set(samples))
+    res["palette_rejected"] = [c for c, n in freq.items() if n < 2]
     if tops:
         res["video_card"] = {
             "top_pct": round(med(tops), 3),
@@ -179,10 +240,18 @@ def measure(path, out_dir, reel_top=None, reel_h=None):
             os.remove(f)
     res["contact_sheets"] = sheets
 
+    # 風格草稿存進使用者自己的風格庫，用久了就會累積成一整櫃
+    slug = os.path.splitext(os.path.basename(path))[0]
+    slug = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in slug).strip("-").lower()
+    draft = write_style_draft(res, slug or "untitled")
+    res["style_draft"] = draft
+
     with open(os.path.join(out_dir, "ref_measure.json"), "w", encoding="utf-8") as fh:
         json.dump(res, fh, ensure_ascii=False, indent=2)
     print(json.dumps(res, ensure_ascii=False, indent=2))
-    print("\n看 contact sheet 之後，把設計語彙寫進 style.json：\n  " + "\n  ".join(sheets))
+    print(f"\n風格草稿已存：{draft}")
+    print("   量到的數字已經填好了；強調色、字級、動態時長還是預設值。")
+    print("\n接著看這兩張 contact sheet，把看到的設計語彙補進去：\n  " + "\n  ".join(sheets))
     return res
 
 
